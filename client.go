@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
-const apiBaseAddress = "https://api.cloudflare.com/v4/"
+const apiBaseAddress = "https://api.cloudflare.com/client/v4/"
 
 type Response struct {
 	Success bool `json:"success"`
@@ -28,8 +29,16 @@ type Response struct {
 	} `json:"result_info"`
 }
 
-func (r *Response) ok() bool {
+func (r *Response) Ok() bool {
 	return r.Success
+}
+
+func (r *Response) FormatErrors() string {
+	builder := strings.Builder{}
+	for _, error := range r.Errors {
+		builder.WriteString(fmt.Sprintf("%d: %s. ", error.Code, error.Message))
+	}
+	return builder.String()
 }
 
 type Client struct {

@@ -7,16 +7,12 @@ import (
 )
 
 type DnsRecord struct {
-	Type    string `json:"type,omitempty"`
-	Name    string `json:"name,omitempty"`
-	Content string `json:"content,omitempty"`
-	TTL     *int   `json:"ttl,omitempty"`
-	Proxied *bool  `json:"proxied,omitempty"`
-}
-
-type DnsRecordProperties struct {
-	Id         string    `json:"id,omitempty"`
+	Type       string    `json:"type,omitempty"`
+	Name       string    `json:"name,omitempty"`
+	Content    string    `json:"content,omitempty"`
+	TTL        int       `json:"ttl,omitempty"`
 	Proxied    bool      `json:"proxied,omitempty"`
+	Id         string    `json:"id,omitempty"`
 	Proxiable  bool      `json:"proxiable,omitempty"`
 	Locked     bool      `json:"locked,omitempty"`
 	ZoneId     string    `json:"zone_id,omitempty"`
@@ -27,30 +23,12 @@ type DnsRecordProperties struct {
 
 type DnsRecordResponse struct {
 	Response
-	Record struct {
-		DnsRecord
-		DnsRecordProperties
-	} `json:"result"`
+	Record DnsRecord `json:"result"`
 }
 
 type DnsRecordsResponse struct {
 	Response
-	Records []struct {
-		DnsRecord
-		DnsRecordProperties
-	} `json:"result"`
-}
-
-type ListDnsRecordsQuery struct {
-	client     *Client
-	zoneId     string
-	parameters map[string]string
-}
-
-type CreateDnsRecordQuery struct {
-	client     *Client
-	zoneId     string
-	parameters map[string]interface{}
+	Records []DnsRecord `json:"result"`
 }
 
 type DnsRecordFilter struct {
@@ -64,6 +42,19 @@ type DnsRecordFilter struct {
 	// Match determines whether "all" or "any" of the properties above
 	// should match. Defaults to "all" if empty.
 	Match string
+}
+
+type updatedDnsRecord struct {
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Content string `json:"content"`
+	TTL     *int   `json:"ttl,omitempty"`
+	Proxied *bool  `json:"proxied,omitempty"`
+}
+
+type newDnsRecord struct {
+	updatedDnsRecord
+	Priority *int `json:"priority,omitempty"`
 }
 
 func (client *Client) ListDnsRecords(zoneId string, filter DnsRecordFilter) (DnsRecordsResponse, error) {
@@ -90,7 +81,8 @@ func (client *Client) ListDnsRecords(zoneId string, filter DnsRecordFilter) (Dns
 	return records, nil
 }
 
-func (client *Client) CreateDnsRecord(zoneId string, record DnsRecord) (DnsRecordResponse, error) {
+func (client *Client) CreateDnsRecord(zoneId, recordType, name, content string, ttl, priority *int, proxied *bool) (DnsRecordResponse, error) {
+	record := newDnsRecord{updatedDnsRecord{recordType, name, content, ttl, proxied}, priority}
 	data, err := json.Marshal(record)
 	if err != nil {
 		return DnsRecordResponse{}, err
@@ -105,7 +97,8 @@ func (client *Client) CreateDnsRecord(zoneId string, record DnsRecord) (DnsRecor
 	return newRecord, nil
 }
 
-func (client *Client) UpdateDnsRecord(zoneId, recordId string, record DnsRecord) (DnsRecordResponse, error) {
+func (client *Client) UpdateDnsRecord(zoneId, recordId, recordType, name, content string, ttl *int, proxied *bool) (DnsRecordResponse, error) {
+	record := updatedDnsRecord{Type: recordType, Name: name, Content: content, TTL: ttl, Proxied: proxied}
 	data, err := json.Marshal(record)
 	if err != nil {
 		return DnsRecordResponse{}, err
